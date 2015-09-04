@@ -1,0 +1,95 @@
+\documentclass{article}
+\input{c:/aaaWork/zGnrlLatex/GnrlPreamble}
+\input{c:/aaaWork/zGnrlLatex/justRPreamble}
+\hypersetup{pdftitle = MNAFS2013 HW - Back-Calculation}
+\newif\ifdothis
+
+\begin{document}
+<<setup, echo=FALSE, include=FALSE, warning=FALSE, message=FALSE>>=
+source("c:/aaaWork/zGnrlLatex/knitr_setup.R")
+library(FSA)
+dothis <- FALSE
+#dothis <- TRUE  # uncomment to show answer key
+@
+%\dothistrue    % uncomment to show answers
+
+\section*{Back-Calculation Assignment}
+The file \R{MNBCData98.csv} contains radial measurements from scales for a variety of species captured in 1998 from a variety of lakes in southern Minnesota.  Use these data to answer the questions below.
+
+<<eval=dothis, echo=dothis>>=
+setwd("C:/aaaWork/Web/fishR/Courses/MNAFS2013/CourseMaterial")
+mn <- read.csv("MNBCData98.csv",header=TRUE)
+str(mn)
+@
+
+\begin{enumerate}
+  \item Choose a lake and species to examine.  You may find it useful to use the following code, which assumes that you named the data frame as \R{mn} in R and you are interested in Lake Shetek Walleye.
+<<eval=FALSE>>=
+table(mn$lake,mn$species)
+df <- Subset(mn,species=="WAE" & lake=="Lake Shetek")
+@
+<<wfac2, eval=dothis, echo=FALSE>>=
+df <- Subset(mn,species=="WAE" & lake=="Lake Shetek")
+@
+\ifdothis
+I chose to examine Lake Shetek Walleye as illustrated with the example \R{Subset()} function.
+\fi
+
+  \item Is ``plus-growth'' recorded for your chosen data?  Explain.
+<<eval=dothis, echo=dothis>>=
+head(df,n=3)
+tail(df,n=3)
+@
+\ifdothis
+``Plus-growth'' is recorded because one more ``anu'' measurement appears in the data file then the assessed age.  For example, fish #155 was 1-year-old but two radial measurements were recorded and fish #1215 was 6-years-old but seven radial measurements were recorded.
+\fi
+  \item Fit the regression required for use with the scale-proportional-hypothesis model.  Save the intercept and slope for use below.  Comment on the fit of this model.
+<<bcfitplot1, eval=dothis, echo=dothis, fig.show='hold'>>=
+lm.SL <- lm(radcap~lencap,data=df)
+coef(lm.SL)
+( a <- coef(lm.SL)[1] )
+( b <- coef(lm.SL)[2] )
+fitPlot(lm.SL,main="")
+residPlot(lm.SL,loess=TRUE)
+@  
+\ifdothis
+I am a bit concerned about a slight non-linearity in the data.
+\fi
+  \item Use the scale-proportional-hypothesis method to back-calculate length-at-age for your data.
+<<eval=dothis, echo=dothis>>=
+df2 <- gReshape(df,in.pre="anu",last.plus="agecap")
+df2 <- within(df2, lenSPH <- (anu/radcap)*(lencap+(a/b))-(a/b))
+view(df2)
+@
+  \item Compute the mean ``back-calculated'' length-at-age.
+<<eval=dothis, echo=dothis>>=
+Summarize(lenSPH~age,data=df2,digits=2)
+@  
+  \item Compute the mean ``back-calculated'' length-at-age for different ages-at-capture (and, perhaps, construct a plot).  Any interesting observations from this summary?
+<<bcMeanLength1, eval=dothis, echo=dothis>>=
+Summarize(lenSPH~age*agecap,data=df2,digits=2)
+library(lattice)
+xyplot(lenSPH~age|factor(agecap),groups=factor(fish),data=Subset(df2,agecap>1),
+       type="l",ylab="Back-Calculated Length (mm)",xlab="Age")
+@
+\ifdothis
+Depends on chosen data.
+\fi   
+  
+  \item (\emph{Time Permitting}) Repeat the previous questions but using the body-proportional-hypothesis.  How different are the summary results?
+<<eval=dothis, echo=dothis>>=
+lm.LS <- lm(lencap~radcap,data=df)
+( c <- coef(lm.LS)[1] )
+( d <- coef(lm.LS)[2] )
+df2 <- within(df2, lenBPH <- lencap*(c+d*anu)/(c+d*radcap))
+Summarize(lenBPH~age,data=df2,digits=2)
+Summarize(lenBPH~age*agecap,data=df2,digits=2)
+@
+\ifdothis
+Depends on data choice.
+\fi
+
+  \item (\emph{Time Permitting}) Repeat the previous questions but use a different species and lake combination.
+
+\end{enumerate}  
+\end{document}

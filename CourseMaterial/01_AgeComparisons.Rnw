@@ -1,0 +1,55 @@
+\documentclass{article}
+\input{c:/aaaWork/zGnrlLatex/GnrlPreamble}
+\input{c:/aaaWork/zGnrlLatex/justRPreamble}
+\hypersetup{pdftitle = NRS349 HO - Age-Length Key}
+
+\begin{document}
+  \titleRHO{Age Comparisons}{MN AFS}{Dec}
+
+<<setup,echo=FALSE,include=FALSE>>=
+source("c:/aaaWork/zGnrlLatex/knitr_setup.R")
+@
+<<results='hide', warning=FALSE, message=FALSE>>=
+library(FSA)
+@
+
+\section*{Lake Huron Alewife}
+<<>>=
+setwd("C:/aaaWork/Web/fishR/courses/MNAFS2013/CourseMaterial/")
+d <- read.csv("AlewifeLH.csv",header=TRUE)
+str(d)
+view(d)
+@
+
+\newpage
+\section*{Otolith-Scale Bias?} 
+<<>>=
+ac1 <- ageComp(otoliths~scales,data=d,col.lab="Otolith Age",row.lab="Scale Age")
+summary(ac1,what="agreement")
+summary(ac1,what="symmetry",flip.table=TRUE)
+summary(ac1,what="bias")
+@
+
+<<ac1, par2=TRUE, fig.width=8, fig.height=4, out.width='0.9\\linewidth', fig.show='hold'>>=
+plot(ac1)                    # LEFT
+plot(ac1,what="difference")  # RIGHT
+@
+
+
+\section*{Otolith-Scale Precision?} 
+<<results='hide'>>=
+summary(ac1,what="detail")   #only a portion shown
+@
+\vspace{-12pt}
+<<echo=-1>>=
+view(ac1$detail)
+summary(ac1,what="prec.stats")
+@
+
+
+
+<<echo=FALSE, results='hide', message=FALSE, error=FALSE>>=
+swvCode("01_AgeComparisons.Rnw")
+@
+
+\end{document}

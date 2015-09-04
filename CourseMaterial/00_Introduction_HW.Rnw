@@ -1,0 +1,124 @@
+\documentclass{article}
+\input{c:/aaaWork/zGnrlLatex/GnrlPreamble}
+\input{c:/aaaWork/zGnrlLatex/justRPreamble}
+\hypersetup{pdftitle = MNAFS2013 HW - Introduction}
+\newif\ifdothis
+
+\begin{document}
+<<setup, echo=FALSE, include=FALSE, warning=FALSE, message=FALSE>>=
+source("c:/aaaWork/zGnrlLatex/knitr_setup.R")
+library(FSA)
+dothis <- FALSE
+#dothis <- TRUE  # uncomment to show answer key
+@
+%\dothistrue    % uncomment to show answers
+
+\section*{R Introduction/Review Assignment}
+The \R{RuffeBio.csv} file contains a variety of biological measurements from Ruffe (\emph{Gymnocephalus cernuus}) captured in the St. Louis River Harbor.  Use these data to answer the following questions.
+
+<<eval=dothis, echo=dothis>>=
+setwd("C:/aaaWork/Web/fishR/Courses/MNAFS2013/CourseMaterial")
+ruf <- read.csv("RuffeBio.csv",header=TRUE)
+str(ruf)
+@
+
+\begin{enumerate}
+  \item How many variables are in this data frame?
+\ifdothis
+\\ There are \Sexpr{ncol(ruf)} variables in this data frame.
+\fi 
+  \item Data was recorded for how many Ruffe?
+\ifdothis
+\\ Data was recorded on \Sexpr{nrow(ruf)} Ruffe in this data frame.
+\fi 
+  \item Show the vector of \var{tl} measures?
+<<eval=dothis, echo=dothis>>=
+ruf$tl
+@
+\ifdothis
+All of the total length measurements are shown above.
+\fi
+  \item What is the \var{tl} for the 17th Ruffe?
+<<eval=dothis, echo=dothis>>=
+ruf$tl[17]
+@
+\ifdothis
+The \var{tl} for the 17th measured individual is \Sexpr{ruf$tl[17]} mm.
+\fi
+  \item Show all information for the 20th Ruffe.
+<<eval=dothis, echo=dothis>>=
+ruf[20,]
+@
+\ifdothis
+All of the information for the 20th Ruffe is shown above.
+\fi
+  \item Create a new data frame of just female Ruffe.  How many fish are in this data frame?
+<<eval=dothis, echo=dothis>>=
+df1 <- Subset(ruf,sex=="female")
+@
+\ifdothis
+There are \Sexpr{nrow(df1)} Ruffe in this data frame.
+\fi
+  \item Create a new data frame excluding Ruffe of unknown sex.  How many fish are in this data frame?
+<<eval=dothis, echo=dothis>>=
+df2 <- Subset(ruf,sex!="unknown")
+@
+\ifdothis
+There are \Sexpr{nrow(df2)} Ruffe in this data frame.
+\fi
+  \item Create a new data frame of Ruffe greater than 110 mm.  How many fish are in this data frame?
+<<eval=dothis, echo=dothis>>=
+df3 <- Subset(ruf,tl>110)
+@
+\ifdothis
+There are \Sexpr{nrow(df3)} Ruffe in this data frame.
+\fi
+  \item Create a new data frame of Ruffe between 80 and 120 mm.  How many fish are in this data frame?
+<<eval=dothis, echo=dothis>>=
+df4 <- Subset(ruf,tl>80 & tl<120)
+@
+\ifdothis
+There are \Sexpr{nrow(df4)} Ruffe in this data frame.
+\fi
+  \item Create a new data frame of male Ruffe less than 100 mm.  How many fish are in this data frame?
+<<eval=dothis, echo=dothis>>=
+df5 <- Subset(ruf,sex=="male" & tl<100)
+@
+\ifdothis
+There are \Sexpr{nrow(df5)} Ruffe in this data frame.
+\fi
+  \item Create a new variable in the original data frame that is Fulton's condition factor (i.e., the weight of the fish divided by the cubed length of the fish multiplied by 100000).
+<<eval=dothis, echo=dothis>>=
+ruf$fult <- ruf$wt/(ruf$tl^3)*100000
+@
+  \item Compute the mean Fulton's condition factor.
+<<eval=dothis, echo=dothis>>=
+Summarize(~fult,data=ruf,digits=3)
+@
+\ifdothis
+The mean Fulton's condition factor is \Sexpr{formatC(mean(ruf$fult,na.rm=TRUE),format="f",digits=3)} Ruffe in this data frame.
+\fi
+
+  \item Compute the mean Fulton's condition factor separately for males and females.
+<<eval=dothis, echo=dothis>>=
+Summarize(fult~sex,data=ruf,digits=3)
+@
+  \item Create a histogram of Fulton's condition factor.
+<<Fultons1, eval=dothis, echo=dothis>>=
+hist(~fult,data=ruf,xlab="Fulton's Condition Factor",col="gray90")
+@
+  \item Create a scatterplot of the relationship between Fulton's condition factor and total length.
+<<Fultons2, eval=dothis, echo=dothis>>=
+plot(fult~tl,data=ruf,xlab="Total Length",ylab="Fulton's Condition Factor",pch=16)
+@
+  \item Fit a model that can be used to predict Fulton's condition factor from total length.  Find the model coefficients and $r^2$ value and construct a plot that shows the fitted model.
+<<Fultons3, eval=dothis, echo=dothis>>=
+lm1 <- lm(fult~tl,data=ruf)
+summary(lm1)
+plot(fult~tl,data=ruf,xlab="Total Length",ylab="Fulton's Condition Factor",pch=16)
+b <- coef(lm1)[1]
+m <- coef(lm1)[2]
+curve(m*x+b,from=40,to=135,add=TRUE,col="red",lwd=2)
+@
+\end{enumerate}
+\end{document}

@@ -1,0 +1,94 @@
+\documentclass{article}
+\input{c:/aaaWork/zGnrlLatex/GnrlPreamble}
+\input{c:/aaaWork/zGnrlLatex/justRPreamble}
+\hypersetup{pdftitle = MNAFS2013 HW - Growth}
+\newif\ifdothis
+
+\begin{document}
+<<setup, echo=FALSE, include=FALSE, warning=FALSE, message=FALSE>>=
+source("c:/aaaWork/zGnrlLatex/knitr_setup.R")
+library(FSA)
+library(FSAdata)
+library(nlstools)
+dothis <- FALSE
+#dothis <- TRUE  # uncomment to show answer key
+@
+%\dothistrue    % uncomment to show answers
+
+\section*{Individual Growth Assignment}
+Wolfert (1980) examined the population of Rock Bass (\emph{Ambloplites rupestris}) from Eastern Lake Ontario in the late 1970s.  In his studies, he measured the total length of 1288 Rock Bass.  Scales were removed for age assignment from as many as 10 fish from each 10-mm length interval.  The lengths and ages (if they existed) from all 1288 fish are recorded in \R{RockBassLO2.csv} [Note: the filename contains an ``oh'' not a ``zero''.].  In the ``Age-Length Key" assignment you predicted ages for all of the unaged fish to produce a data frame that had age ``assignments'' for all 1288 fish.  You should start this analysis with that combined data frame (i.e., open and run your ``Age-Length Key" assignment script and then continue with an analysis for the questions below.) 
+
+<<eval=dothis, echo=dothis>>=
+setwd("C:/aaaWork/Web/fishR/Courses/MNAFS2013/CourseMaterial")
+source("02_AgeLengthKey_HW.R")
+str(rb.comb)
+@
+
+\begin{enumerate}
+  \newcounter{saveenum}
+  \item Plot length versus age.  Observe the ``shape'' of the data (do the results look linear or like a von Bertalanffy growth curve, is there an obvious asymptote, are young fish well represented, how variable are lengths within ages).
+<<eval=dothis, echo=dothis>>=
+plot(tl~age,data=rb.comb,ylab="Total Length (mm)",xlab="Age",pch=16,col=rgb(0,0,0,0.08))
+@
+\ifdothis
+The results look fairly linear, there is some semblance of an asymptote near 240 mm beginning at age 8 or 9, there are not fish younger than age-3, and there is a good deal of variability in length at each age (nearly 75 mm at each age).
+\fi   
+  
+  \item Compute point estimates of $L_\infty$, $K$, and $t_{0}$ for the typical von Bertalanffy parameterization.  How realistic do these values seem?
+<<eval=dothis, echo=dothis>>=
+vb1 <- vbFuns("typical")
+svb1 <- vbStarts(tl~age,data=rb.comb,type="typical")
+fit1 <- nls(tl~vb1(age,Linf,K,t0),data=rb.comb,start=svb1)
+coef(fit1)
+@
+\ifdothis
+The point estimates are $L_\infty$=\Sexpr{formatC(coef(fit1)["Linf"],format="f",digits=1)}, $K$=\Sexpr{formatC(coef(fit1)["K"],format="f",digits=3)}, and $t_{0}$=\Sexpr{formatC(coef(fit1)["t0"],format="f",digits=2)}.  The $L_\infty$ value does not seem realistic given that it is nearly \Sexpr{formatC(coef(fit1)["Linf"]-max(rb.comb$tl),format="f",digits=1)} mm larger than the observed maximum length.  The very negative $t_{0}$ and $K$ value near zero also indicate that the best-fit model is linear with a shallow slope (see plot further below).
+\fi
+  \item Construct 95\% boot-strapped confidence intervals for each parameter.  Comment on the widths of these confidence intervals.  What explains this?
+<<eval=dothis, echo=dothis>>=
+boot1 <- nlsBoot(fit1,niter=200)
+confint(boot1)
+@  
+\ifdothis
+The 95\% confidence intervals are (\Sexpr{formatC(confint(boot1)["Linf",1],format="f",digits=1)},\Sexpr{formatC(confint(boot1)["Linf",2],format="f",digits=1)}) for $L_\infty$, (\Sexpr{formatC(confint(boot1)["K",1],format="f",digits=3)},\Sexpr{formatC(confint(boot1)["K",2],format="f",digits=3)}) for $K$, and (\Sexpr{formatC(confint(boot1)["t0",1],format="f",digits=2)},\Sexpr{formatC(confint(boot1)["t0",2],format="f",digits=2)}) for $t_{0}$.  These intervals are generally very wide which is largely caused by the large variability in length within each age.  The confidence interval for $L_\infty$ is also large because it is essentially an extrapolation.
+\fi
+  \item Predict the mean length, with 95\% confidence interval for an age-6 Rock Bass.  Comment on the width of this confidence interval.  What explains this?
+<<eval=dothis, echo=dothis>>=
+predict(fit1, data.frame(age=6))
+pv <- apply(boot1$coefboot,FUN=vb1,MARGIN=1,t=6)
+quantile(pv,c(0.025,0.975))
+@      
+\ifdothis
+The predicted mean length for an age=6 Rock Bass is \Sexpr{formatC(predict(fit1, data.frame(age=6)),format="f",digits=0)} with a 95\% confidence interval of (\Sexpr{formatC(quantile(pv,0.025),format="f",digits=0)},\Sexpr{formatC(quantile(pv,0.975),format="f",digits=0)}).  This confidence interval is narrow because there is a great deal of data at the intermediate ages.  The confidence intervals would likely be wider for ages nearer the margins of the observed distribution of ages.
+\fi
+  \item Plot length versus age and superimpose the best-fit von Bertalanffy model.  Comment on model fit.
+<<eval=dothis, echo=dothis>>=
+plot(tl~age,data=rb.comb,ylab="Total Length (mm)",xlab="Age",pch=16,col=rgb(0,0,0,0.08))
+curve(vb1(x,Linf=coef(fit1)),from=3,to=11,n=500,lwd=2,col="red",add=TRUE)
+@ 
+\ifdothis
+The model generally fits the mean length-at-age well for ages 4 to 7.  It clearly overestimates the mean length for age 3 and underestimates for all ages greater than age 7 with the possible exception of age 11.  The model is generally quite linear.  Model fit would benefit from observing some fish less than age 3.
+\fi
+  \item Compute the correlation between parameter values.  Comment.
+<<eval=dothis, echo=dothis>>=
+overview(fit1)
+@      
+\ifdothis
+Not surprisingly, the correlation coefficients are very highly correlated.
+\fi
+
+  \item (\emph{Time Permitting}) Fit the Galucci and Quinn parameterization to find an estimate of the $\omega$ parameter.
+<<eval=dothis, echo=dothis>>=
+vb2 <- vbFuns("GalucciQuinn")
+svb2 <- vbStarts(tl~age,data=rb.comb,type="GalucciQuinn")
+fit2 <- nls(tl~vb2(age,omega,K,t0),data=rb.comb,start=svb2)
+coef(fit2)
+boot2 <- nlsBoot(fit2,niter=200)
+confint(boot2)
+@      
+\ifdothis
+The point estimate for $\omega$ is \Sexpr{formatC(coef(fit2)["omega"],format="f",digits=1)} with a 95\% confidence interval of (\Sexpr{formatC(confint(boot2)["omega",1],format="f",digits=1)},\Sexpr{formatC(confint(boot2)["omega",2],format="f",digits=1)})
+\fi
+
+\end{enumerate}  
+\end{document}

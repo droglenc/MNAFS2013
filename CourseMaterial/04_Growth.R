@@ -1,0 +1,43 @@
+
+library(FSA)      # Subset, fitPlot, vbModels, vbStart, vbFuns
+library(nlstools) # overview
+
+setwd("C:/aaaWork/Web/fishR/courses/MNAFS2013/CourseMaterial/")
+d <- read.csv("TroutBR.csv",header=TRUE)
+str(d)
+rbt <- Subset(d,species=="Rainbow")
+str(rbt)
+
+xlbl <- "Age (yrs)"
+ylbl <- "Total Length (in)"
+clr <- rgb(0,0,0,0.05)
+
+plot(tl~age,data=rbt,xlab=xlbl,ylab=ylbl,pch=16,col=clr)
+
+vbModels()
+
+( svb1 <- vbStarts(tl~age,data=rbt,type="typical") )
+fit1 <- nls(tl~Linf*(1-exp(-K*(age-t0))),data=rbt,start=svb1)
+overview(fit1)
+( cf <- coef(fit1) )
+plot(tl~age,data=rbt,xlab=xlbl,ylab=ylbl,pch=16,col=clr)
+curve(cf["Linf"]*(1-exp(-cf["K"]*(x-cf["t0"]))),from=3,to=10,n=500,lwd=2,col="red",add=TRUE)
+boot1 <- nlsBoot(fit1,niter=200)   # niter should be nearer 1000
+confint(boot1)
+
+new <- data.frame(age=8)
+predict(fit1, new)
+ests1 <- boot1$coefboot
+pv <- ests1[,"Linf"]*(1-exp(-ests1[,"K"]*(8-ests1[,"t0"])))
+quantile(pv,c(0.025,0.975))
+
+ages <- c(3,8)
+( vb2 <- vbFuns("Francis") )
+( sv2 <- vbStarts(tl~age,data=rbt,type="Francis",tFrancis=ages) )
+fit2 <- nls(tl~vb2(age,L1,L2,L3,t1=ages[1],t3=ages[2]),data=rbt,start=sv2)
+overview(fit2)
+plot(tl~age,data=rbt,xlab=xlbl,ylab=ylbl,pch=16,col=clr)
+curve(vb2(x,L1=coef(fit2),t1=ages),from=3,to=10,n=500,lwd=2,col="red",add=TRUE)
+boot2 <- nlsBoot(fit2,niter=200)   # niter should be nearer 1000
+confint(boot2)
+
